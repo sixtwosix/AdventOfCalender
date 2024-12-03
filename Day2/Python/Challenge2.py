@@ -34,8 +34,9 @@ def checkLevelsSafety(list_levels,problem_count,var_safe):
         #     list_levels_safe.append(0)
     print(list_diff)
     
-    direction = 0
-    for i in range(len(list_diff)):
+    # direction = 0
+    # for i in range(len(list_diff)):
+        
         
     # return list_levels,problem_count,var_safe
 

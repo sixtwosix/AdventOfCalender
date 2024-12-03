@@ -3,8 +3,6 @@ import numpy as np
 
 input_file = "./input1.txt"
 
-
-
 with open(input_file, 'r') as f:
     text = f.read()
     

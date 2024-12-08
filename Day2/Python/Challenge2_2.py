@@ -56,26 +56,27 @@ if (__name__ == "__main__"):
     input_file = "./input1.csv"
     output_file_unsafe = "./out_unsafe1.csv"
     output_file_safe = "./out_safe1.csv"
+    output_file = "./out2.csv"
     with open(input_file,'r') as f:
-        with open(output_file_unsafe, 'w') as g:
-            with open(output_file_safe, 'w') as h:
-                lines = f.readlines()
-                
-                list_safe = []
-                
-                for line in lines:
-                    out_str = line.strip()
-                    line = list(map(int,line.strip().split()))
-                    list_data, fault_count = checkSafety(line, 0)
-                    # print(list_data, fault_count)
-                    if(fault_count > 1):
-                        list_safe.append(0)
-                        out_str += "\t\t X"
-                        g.write(out_str + "\n")
-                    else:
-                        list_safe.append(1)
-                        out_str += "\t\t O"
-                        h.write(out_str + "\n")
+        with open(output_file, 'w') as g:
+            # with open(output_file_safe, 'w') as h:
+            lines = f.readlines()
+            
+            list_safe = []
+            
+            for line in lines:
+                out_str = line.strip()
+                line = list(map(int,line.strip().split()))
+                list_data, fault_count = checkSafety(line, 0)
+                # print(list_data, fault_count)
+                if(fault_count > 1):
+                    list_safe.append(0)
+                    # out_str += "\t\t X"
+                    # g.write(out_str + "\n")
+                else:
+                    list_safe.append(1)
+                    # out_str += "\t\t O"
+                    g.write(out_str + "\n")
                     
                     
                 

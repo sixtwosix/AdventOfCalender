@@ -8,66 +8,10 @@ def rindex(lst,value):
     return len(lst) - i - 1
 
 if __name__ == "__main__":
-    input_file = "test_input1.csv"
-
+    input_file = "input1.csv"
 
     with open(input_file, 'r') as f:
         disk_map = f.readlines()[0]
-    
-    file_blocks = []
-    file_blocks_non_empty = []
-    block_count = 0
-
-    # for i in range(len(disk_map)):
-    #     block_size = int(disk_map[i])
-    #     if(i%2 == 0):
-    #         file_blocks += [block_count for x in range(block_size)]
-    #         file_blocks_non_empty += [block_count for x in range(block_size)]
-    #         block_count += 1
-    #     else:
-    #         file_blocks += ['.' for x in range(block_size)]
-    
-    
-    # print(file_blocks)
-    # # file_blocks = list(map(str,file_blocks))
-    # # file_blocks_non_empty = list(map(str,file_blocks_non_empty))
-
-    # # print(''.join(file_blocks))
-    # # print(''.join(file_blocks_non_empty))
-
-    # values = set(map(lambda x:x, file_blocks))
-    # group_vals = [[y for y in file_blocks if y!='.' and y==x ] for x in values]
-    # print(group_vals)
-    
-    # edited_blocks = copy.deepcopy(file_blocks)
-    
-    # new_blocks = []
-    # prev_x = ''
-    # temp_list = []
-    # # temp_list.append(file_blocks[0])
-    # prev_x = file_blocks[0]
-    # for x in file_blocks:        
-    #     if(x == prev_x):
-    #         temp_list.append(x)
-    #     elif(len(temp_list) > 0):
-    #         # temp_list.append(prev_x)
-    #         new_blocks.append(temp_list)
-    #         temp_list = []
-    #         temp_list.append(x)
-            
-    #     prev_x = x
-    # new_blocks.append(temp_list)
-    
-    # print(new_blocks)
-    
-    # block_numbers = list(filter(lambda x: x[0] != '.', new_blocks))
-    # print(block_numbers)
-    # block_spaces = list(filter(lambda x: x[0] == '.', new_blocks))
-    # print(block_spaces)
-    
-    # for block in block_numbers[::-1]:
-    #     for blank_block in block_spaces:
-    #         if(len(block) <= len(blank_block)):
     
     data_block = []
     block_count = 0

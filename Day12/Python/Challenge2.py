@@ -1,7 +1,7 @@
 
 
 # use BFS to find each similar object of letter in list
-def bread_first_search(row,col,garden,garden_type):
+def breadth_first_search(row,col,garden,garden_type):
     
     dRow = [0, 1, 0, -1]
     dCol = [-1, 0, 1, 0]
@@ -48,10 +48,14 @@ def bread_first_search(row,col,garden,garden_type):
                 curr_circumference.append((adjx,adjy,'.'))
     
     return curr_area,curr_circumference
-        
+
+def determine_side_counts(area):
+    
+    area_remaining = area.copy()
+    
 
 if __name__ == "__main__":
-    input_file = "input1.csv"
+    input_file = "test_input1.csv"
     
     with open(input_file, 'r') as f:
         garden = f.readlines()
@@ -80,7 +84,9 @@ if __name__ == "__main__":
             start_x = remaining[0][0]
             start_y = remaining[0][1]
         
-            area,circumference = bread_first_search(start_x,start_y,garden,garden_type)
+            area,circumference = breadth_first_search(start_x,start_y,garden,garden_type)
+            
+            determine_side_counts(area)
             
             for x in area:
                 garden_coverage.remove(x)

@@ -51,8 +51,17 @@ def breadth_first_search(row,col,garden,garden_type):
 
 def determine_side_counts(area):
     
+    # do a left hand follower around the "structure" and count the amount of turns
+    # if cant turn left or right but can turn around, add count +2
+
+    print(area)
     area_remaining = area.copy()
     
+def determine_inside_side_counts():
+
+    # find the inside spots of the blocks and do the same follower
+
+    print(area)
 
 if __name__ == "__main__":
     input_file = "test_input1.csv"

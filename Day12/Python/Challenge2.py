@@ -56,6 +56,66 @@ def determine_side_counts(area):
 
     print(area)
     area_remaining = area.copy()
+
+    temp_list = list(map(lambda x: x[1],area_remaining))
+    x_limits = (min(temp_list)-1,max(temp_list)+1)
+    temp_list = list(map(lambda y: y[0],area_remaining))
+    y_limits = (min(temp_list)-1,max(temp_list)+1)
+    print(x_limits)
+    print(y_limits)
+
+    x = area_remaining[0][1]
+    y = area_remaining[0][0]-1
+    dx = [1,1,1,0,-1,-1,-1,0]
+    dy = [-1,0,1,1,1,0,-1,-1]
+    # dx_new = [1,1,-1,-1]
+    # dy_new = [-1,1,1,-1]
+
+    
+    direction = 0 # range[0,4]
+
+    sides = 1
+
+    queue = []
+    queue.append((x,y))
+
+    while (y >= y_limits[0] and y <= y_limits[1]) and (x >= x_limits[0] and x <= x_limits[1]):
+
+        for i in range(8):
+            #check where the next block is located.  based on the direction difference determine how much rotated = how many sides
+            dir_new = (direction + i) % 8
+            x_new = x + dx[dir_new]
+            y_new = y + dy[dir_new]
+
+            if(check_area_contains(x_new,y_new,area_remaining)):
+                dir_new = dir_new - 1
+                x = x + dx[dir_new]
+                y = y + dy[dir_new]
+                if((x,y) in queue):
+                    x = -2
+                else:
+                    queue.append((x,y))
+                # if(direction != dir_new):
+                    if(queue[-1][0]!= queue[-2][0]) and (queue[-1][1] != queue[-2][1]):
+                        # TODO: Figure out the 3rd shape why its missing some sides
+                        sides+=1
+                direction = dir_new                
+                break
+
+    print(f"Sides: {sides}")
+            
+            
+
+
+        
+
+def check_area_contains(x,y,area):
+    area_xy = list(map(lambda x: (x[1],x[0]),area))
+    if((x,y) in area_xy):
+        return  True
+    else:
+        return False
+
     
 def determine_inside_side_counts():
 
@@ -73,6 +133,9 @@ if __name__ == "__main__":
     garden = list(map(list,garden))
     
     garden_coverage = []
+
+    Y_MAX = len(garden)
+    X_MAX = len(garden[0])
     
     print("Garden coverage")
     for i in range(len(garden)):

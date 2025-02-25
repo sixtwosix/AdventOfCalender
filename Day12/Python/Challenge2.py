@@ -85,24 +85,28 @@ def determine_side_counts(area):
             #check where the next block is located.  based on the direction difference determine how much rotated = how many sides
             dir_new = (direction + i) % 8
             x_new = x + dx[dir_new]
-            y_new = y + dy[dir_new]
+            y_new = y + dy[dir_new]            
 
-            if(check_area_contains(x_new,y_new,area_remaining)):
+            
+            if(check_area_contains(x_new,y_new,area_remaining) and not check_area_contains(x+dx[dir_new-1],y+dy[dir_new-1],area_remaining)):
                 dir_new = dir_new - 1
                 x = x + dx[dir_new]
                 y = y + dy[dir_new]
-                if((x,y) in queue):
+                # if((x,y) in queue):
+                if((x,y) == queue[0]):
                     x = -2
                 else:
                     queue.append((x,y))
-                # if(direction != dir_new):
+                #TODO: Debug the E shape, figure out to add +2 when tunnel turns around
                     if(queue[-1][0]!= queue[-2][0]) and (queue[-1][1] != queue[-2][1]):
-                        # TODO: Figure out the 3rd shape why its missing some sides
                         sides+=1
+                        if(direction == dir_new):
+                            sides+=1
                 direction = dir_new                
                 break
 
     print(f"Sides: {sides}")
+    print(queue)
             
             
 
@@ -124,7 +128,7 @@ def determine_inside_side_counts():
     print(area)
 
 if __name__ == "__main__":
-    input_file = "test_input1.csv"
+    input_file = "test_input4.csv"
     
     with open(input_file, 'r') as f:
         garden = f.readlines()

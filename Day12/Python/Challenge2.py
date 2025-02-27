@@ -87,9 +87,10 @@ def determine_side_counts(area):
             dir_new = (direction + i) % 8
             x_new = x + dx[dir_new]
             y_new = y + dy[dir_new]            
-
+            x_new_minus1 = x+dx[dir_new-1]
+            y_new_minus1 = y+dy[dir_new-1]
             
-            if(check_area_contains(x_new,y_new,area_remaining) and not check_area_contains(x+dx[dir_new-1],y+dy[dir_new-1],area_remaining)):
+            if(check_area_contains(x_new,y_new,area_remaining) and not check_area_contains(x_new_minus1,y_new_minus1,area_remaining)):
                 dir_new = dir_new - 1
                 x = x + dx[dir_new]
                 y = y + dy[dir_new]
@@ -111,9 +112,8 @@ def determine_side_counts(area):
 
     # print(f"Sides: {sides}")
     # print(queue)
-    determine_inside_blocks(queue,area_remaining)
     
-    return sides        
+    return sides, queue
 
 def check_area_contains(x,y,area):
     area_xy = list(map(lambda x: (x[1],x[0]),area))
@@ -126,24 +126,33 @@ def determine_inside_blocks(surrounding_blocks, area):
     # TODO -> find the inside spots of the blocks and do the same follower
     area_xy = list(map(lambda x: (x[1],x[0]),area))
     outside_area = surrounding_blocks + area_xy
-    print(outside_area)
+    # print(outside_area)
     
     temp_list = list(map(lambda x: x[1],outside_area))    
+    x_limits = (min(temp_list)-1,max(temp_list)+1)
     np_x = np.array(temp_list)
     temp_list = list(map(lambda y: y[0],outside_area))
-    np_y = np.array(temp_list)
-    
-    # TODO: determine the empty blocks from the Crosstab created below
-    res = pd.crosstab(np_x,np_y)
-    print(res)
-    # * Only require one of the empty blocks inside each to start the sides search engine, can also itterate untill all inside blocks found    
-    print()
-    
-    
-    
+    np_y = np.array(temp_list)    
+    y_limits = (min(temp_list)-1,max(temp_list)+1)
 
+    # TODO: determine the empty blocks from the Crosstab created below
+    df_res = pd.crosstab(np_x,np_y)
+    # print(df_res)
+    # * Only require one of the empty blocks inside each to start the sides search engine, can also itterate untill all inside blocks found    
+    list_insides = []
+
+    for x in range(x_limits[0]+2,x_limits[1]-2 + 1):
+        for y in range(y_limits[0]+2,y_limits[1]-2 + 1):
+            if(df_res[y][x]) == 0:
+                list_insides.append((x,y))
+    
+    return list_insides
+    
+    
+# TODO Fix issues with input3, some scenarios counting to much cause of inside counts and some missing counts on inside corners
+# ? Maybe consider restructuring by adding count when direction changes with regards to 'N' 'E' 'S' 'W'
 if __name__ == "__main__":
-    input_file = "test_input5.csv"
+    input_file = "test_input3.csv"
     
     with open(input_file, 'r') as f:
         garden = f.readlines()
@@ -177,13 +186,22 @@ if __name__ == "__main__":
         
             area,circumference = breadth_first_search(start_x,start_y,garden,garden_type)
             
-            sides_count = determine_side_counts(area)
+            sides_count, outside_queue = determine_side_counts(area)
+            inside_blocks = determine_inside_blocks(outside_queue,area)
+            inside_count_total = 0
+            while (len(inside_blocks) > 0):                        
+                insides_count, inside_queue = determine_side_counts(inside_blocks)
+                temp_insideBlocks = determine_inside_blocks(inside_queue,[])
+                inside_count_total += insides_count
+                for insideBlock in temp_insideBlocks:
+                    inside_blocks.remove(insideBlock)
+                # print(inside_blocks)
             
             for x in area:
                 garden_coverage.remove(x)
         
-            cost = len(area) * sides_count
-            print(f"Type {garden_type} : {len(area)} * {sides_count} = {cost}")
+            cost = len(area) * (sides_count + inside_count_total)
+            print(f"Type {garden_type} : {len(area)} * {sides_count + inside_count_total} = {cost}")
             total_cost+=cost
     
     print(f"Total cost: {total_cost}")

@@ -1,4 +1,5 @@
-
+import pandas as pd
+import numpy as np
 
 # use BFS to find each similar object of letter in list
 def breadth_first_search(row,col,garden,garden_type):
@@ -54,15 +55,15 @@ def determine_side_counts(area):
     # do a left hand follower around the "structure" and count the amount of turns
     # if cant turn left or right but can turn around, add count +2
 
-    print(area)
+    # print(area)
     area_remaining = area.copy()
 
     temp_list = list(map(lambda x: x[1],area_remaining))
     x_limits = (min(temp_list)-1,max(temp_list)+1)
     temp_list = list(map(lambda y: y[0],area_remaining))
     y_limits = (min(temp_list)-1,max(temp_list)+1)
-    print(x_limits)
-    print(y_limits)
+    # print(x_limits)
+    # print(y_limits)
 
     x = area_remaining[0][1]
     y = area_remaining[0][0]-1
@@ -97,21 +98,22 @@ def determine_side_counts(area):
                     x = -2
                 else:
                     queue.append((x,y))
-                #TODO: Debug the E shape, figure out to add +2 when tunnel turns around
+                
                     if(queue[-1][0]!= queue[-2][0]) and (queue[-1][1] != queue[-2][1]):
                         sides+=1
                         if(direction == dir_new):
                             sides+=1
+                    #? Check if this works for E shape, figure out to add +2 when tunnel turns around
+                    if(len(queue) >= 3) and (queue[-1][0] == queue[-3][0]) and (queue[-1][1] == queue[-3][1]):
+                        sides+=2
                 direction = dir_new                
                 break
 
-    print(f"Sides: {sides}")
-    print(queue)
-            
-            
-
-
-        
+    # print(f"Sides: {sides}")
+    # print(queue)
+    determine_inside_blocks(queue,area_remaining)
+    
+    return sides        
 
 def check_area_contains(x,y,area):
     area_xy = list(map(lambda x: (x[1],x[0]),area))
@@ -120,15 +122,28 @@ def check_area_contains(x,y,area):
     else:
         return False
 
+def determine_inside_blocks(surrounding_blocks, area):
+    # TODO -> find the inside spots of the blocks and do the same follower
+    area_xy = list(map(lambda x: (x[1],x[0]),area))
+    outside_area = surrounding_blocks + area_xy
+    print(outside_area)
     
-def determine_inside_side_counts():
-
-    # find the inside spots of the blocks and do the same follower
-
-    print(area)
+    temp_list = list(map(lambda x: x[1],outside_area))    
+    np_x = np.array(temp_list)
+    temp_list = list(map(lambda y: y[0],outside_area))
+    np_y = np.array(temp_list)
+    
+    # TODO: determine the empty blocks from the Crosstab created below
+    res = pd.crosstab(np_x,np_y)
+    print(res)
+    # * Only require one of the empty blocks inside each to start the sides search engine, can also itterate untill all inside blocks found    
+    print()
+    
+    
+    
 
 if __name__ == "__main__":
-    input_file = "test_input4.csv"
+    input_file = "test_input5.csv"
     
     with open(input_file, 'r') as f:
         garden = f.readlines()
@@ -162,13 +177,13 @@ if __name__ == "__main__":
         
             area,circumference = breadth_first_search(start_x,start_y,garden,garden_type)
             
-            determine_side_counts(area)
+            sides_count = determine_side_counts(area)
             
             for x in area:
                 garden_coverage.remove(x)
         
-            cost = len(area) * len(circumference)
-            print(f"Type {garden_type} : {len(area)} * {len(circumference)} = {cost}")
+            cost = len(area) * sides_count
+            print(f"Type {garden_type} : {len(area)} * {sides_count} = {cost}")
             total_cost+=cost
     
     print(f"Total cost: {total_cost}")

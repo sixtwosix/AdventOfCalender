@@ -73,7 +73,7 @@ def determine_side_counts(area):
     # dy_new = [-1,1,1,-1]
 
     
-    direction = 0 # range[0,4]
+    direction = 0 # range[0,8]
 
     sides = 1
 
@@ -115,6 +115,54 @@ def determine_side_counts(area):
     
     return sides, queue
 
+def determine_side_counts_with_directions(area):
+    area_remaining = area.copy()
+
+    temp_list = list(map(lambda x: x[1],area_remaining))
+    x_limits = (min(temp_list)-1,max(temp_list)+1)
+    temp_list = list(map(lambda y: y[0],area_remaining))
+    y_limits = (min(temp_list)-1,max(temp_list)+1)
+    
+    x = area_remaining[0][1]
+    y = area_remaining[0][0]-1
+    
+    direction = 0 # range[0,4]
+    sides = 0
+    
+    # 'N' - 'E' - 'S' - 'W'
+    dx = [0,1,0,-1]
+    dy = [-1,0,1,0]
+
+    queue = []
+    queue.append((x,y))
+    
+    print(area_remaining)
+
+    while (y >= y_limits[0] and y <= y_limits[1]) and (x >= x_limits[0] and x <= x_limits[1]):
+        
+        for i in range(4):
+            dir_new = (direction + i) % 4
+            
+            x_next = x + dx[dir_new]
+            y_next = y + dy[dir_new]
+            x_new = x_next + dx[(dir_new+1)%4]
+            y_new = y_next + dy[(dir_new+1)%4]
+            
+            if(check_area_contains(x_new,y_new,area_remaining) and not check_area_contains(x_next,y_next,area_remaining)):
+                x = x + dx[dir_new]
+                y = y + dy[dir_new]
+                
+                if((dir_new) == ((direction + 1) % 4)):
+                    sides += 1
+                    
+                queue.append((x,y))                    
+                direction = dir_new
+                break
+    
+    return sides
+                
+    
+
 def check_area_contains(x,y,area):
     area_xy = list(map(lambda x: (x[1],x[0]),area))
     if((x,y) in area_xy):
@@ -152,7 +200,7 @@ def determine_inside_blocks(surrounding_blocks, area):
 # TODO Fix issues with input3, some scenarios counting to much cause of inside counts and some missing counts on inside corners
 # ? Maybe consider restructuring by adding count when direction changes with regards to 'N' 'E' 'S' 'W'
 if __name__ == "__main__":
-    input_file = "test_input3.csv"
+    input_file = "test_input1.csv"
     
     with open(input_file, 'r') as f:
         garden = f.readlines()
@@ -186,22 +234,24 @@ if __name__ == "__main__":
         
             area,circumference = breadth_first_search(start_x,start_y,garden,garden_type)
             
-            sides_count, outside_queue = determine_side_counts(area)
-            inside_blocks = determine_inside_blocks(outside_queue,area)
-            inside_count_total = 0
-            while (len(inside_blocks) > 0):                        
-                insides_count, inside_queue = determine_side_counts(inside_blocks)
-                temp_insideBlocks = determine_inside_blocks(inside_queue,[])
-                inside_count_total += insides_count
-                for insideBlock in temp_insideBlocks:
-                    inside_blocks.remove(insideBlock)
-                # print(inside_blocks)
+            sides = determine_side_counts_with_directions(area)
+            
+            # sides_count, outside_queue = determine_side_counts(area)
+            # inside_blocks = determine_inside_blocks(outside_queue,area)
+            # inside_count_total = 0
+            # while (len(inside_blocks) > 0):                        
+            #     insides_count, inside_queue = determine_side_counts(inside_blocks)
+            #     temp_insideBlocks = determine_inside_blocks(inside_queue,[])
+            #     inside_count_total += insides_count
+            #     for insideBlock in temp_insideBlocks:
+            #         inside_blocks.remove(insideBlock)
+            #     # print(inside_blocks)
             
             for x in area:
                 garden_coverage.remove(x)
         
-            cost = len(area) * (sides_count + inside_count_total)
-            print(f"Type {garden_type} : {len(area)} * {sides_count + inside_count_total} = {cost}")
+            cost = len(area) * (sides)
+            print(f"Type {garden_type} : {len(area)} * {sides} = {cost}")
             total_cost+=cost
     
     print(f"Total cost: {total_cost}")

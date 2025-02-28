@@ -50,109 +50,56 @@ def breadth_first_search(row,col,garden,garden_type):
     
     return curr_area,curr_circumference
 
-def determine_side_counts(area):
-    
-    # do a left hand follower around the "structure" and count the amount of turns
-    # if cant turn left or right but can turn around, add count +2
-
-    # print(area)
-    area_remaining = area.copy()
-
-    temp_list = list(map(lambda x: x[1],area_remaining))
-    x_limits = (min(temp_list)-1,max(temp_list)+1)
-    temp_list = list(map(lambda y: y[0],area_remaining))
-    y_limits = (min(temp_list)-1,max(temp_list)+1)
-    # print(x_limits)
-    # print(y_limits)
-
-    x = area_remaining[0][1]
-    y = area_remaining[0][0]-1
-    dx = [1,1,1,0,-1,-1,-1,0]
-    dy = [-1,0,1,1,1,0,-1,-1]
-    # dx_new = [1,1,-1,-1]
-    # dy_new = [-1,1,1,-1]
-
-    
-    direction = 0 # range[0,4]
-
-    sides = 1
-
-    queue = []
-    queue.append((x,y))
-
-    while (y >= y_limits[0] and y <= y_limits[1]) and (x >= x_limits[0] and x <= x_limits[1]):
-
-        for i in range(8):
-            #check where the next block is located.  based on the direction difference determine how much rotated = how many sides
-            dir_new = (direction + i) % 8
-            x_new = x + dx[dir_new]
-            y_new = y + dy[dir_new]            
-            x_new_minus1 = x+dx[dir_new-1]
-            y_new_minus1 = y+dy[dir_new-1]
-            
-            if(check_area_contains(x_new,y_new,area_remaining) and not check_area_contains(x_new_minus1,y_new_minus1,area_remaining)):
-                dir_new = dir_new - 1
-                x = x + dx[dir_new]
-                y = y + dy[dir_new]
-                # if((x,y) in queue):
-                if((x,y) == queue[0]):
-                    x = -2
-                else:
-                    queue.append((x,y))
-                
-                    if(queue[-1][0]!= queue[-2][0]) and (queue[-1][1] != queue[-2][1]):
-                        sides+=1
-                        if(direction == dir_new):
-                            sides+=1
-                    #? Check if this works for E shape, figure out to add +2 when tunnel turns around
-                    if(len(queue) >= 3) and (queue[-1][0] == queue[-3][0]) and (queue[-1][1] == queue[-3][1]):
-                        sides+=2
-                direction = dir_new                
-                break
-
-    # print(f"Sides: {sides}")
-    # print(queue)
-    
-    return sides, queue
-
-def check_area_contains(x,y,area):
+# * Perfom a scanning algorithm from all 4 sides and determine if there are changes from previous row to count sides
+def scanning_side_counts(area):
     area_xy = list(map(lambda x: (x[1],x[0]),area))
-    if((x,y) in area_xy):
-        return  True
-    else:
-        return False
+    temp_list = list(map(lambda x: x[1],area))
+    x_limits = (min(temp_list),max(temp_list))
+    temp_list = list(map(lambda y: y[0],area))
+    y_limits = (min(temp_list),max(temp_list))
 
-def determine_inside_blocks(surrounding_blocks, area):
-    # TODO -> find the inside spots of the blocks and do the same follower
-    area_xy = list(map(lambda x: (x[1],x[0]),area))
-    outside_area = surrounding_blocks + area_xy
-    # print(outside_area)
-    
-    temp_list = list(map(lambda x: x[1],outside_area))    
-    x_limits = (min(temp_list)-1,max(temp_list)+1)
-    np_x = np.array(temp_list)
-    temp_list = list(map(lambda y: y[0],outside_area))
-    np_y = np.array(temp_list)    
-    y_limits = (min(temp_list)-1,max(temp_list)+1)
+    sides = 0
 
-    # TODO: determine the empty blocks from the Crosstab created below
-    df_res = pd.crosstab(np_x,np_y)
-    # print(df_res)
-    # * Only require one of the empty blocks inside each to start the sides search engine, can also itterate untill all inside blocks found    
-    list_insides = []
+    # Scan from top Down
+    sides += scan_line_by_line(y_limits[0],y_limits[1]+1,1,area_xy,0)
 
-    for x in range(x_limits[0]+2,x_limits[1]-2 + 1):
-        for y in range(y_limits[0]+2,y_limits[1]-2 + 1):
-            if(df_res[y][x]) == 0:
-                list_insides.append((x,y))
+    # Scan from bottom Up
+    sides += scan_line_by_line(y_limits[1],y_limits[0]-1,-1,area_xy,0)    
+
+    # Scan from Left to Right
+    sides += scan_line_by_line(x_limits[0],x_limits[1]+1,1,area_xy,1)
     
-    return list_insides
-    
-    
-# TODO Fix issues with input3, some scenarios counting to much cause of inside counts and some missing counts on inside corners
-# ? Maybe consider restructuring by adding count when direction changes with regards to 'N' 'E' 'S' 'W'
+    # Scan from Right to Left
+    sides += scan_line_by_line(x_limits[1],x_limits[0]-1,-1,area_xy,1)
+        
+    return sides
+
+
+def scan_line_by_line(lower_limit,upper_limit,increment,area_xy,elemenet_nr):
+    prev_line = []
+    sides = 0
+    for b in range(lower_limit,upper_limit,increment):
+        prev_a = list(map(lambda x: x[elemenet_nr],prev_line))
+        curr_line = list(filter(lambda coordinate: coordinate[(elemenet_nr+1)%2] == b,area_xy ))
+        curr_a = list(map(lambda x: x[elemenet_nr],curr_line))
+        diff_a = list(set(prev_a).symmetric_difference(curr_a))
+        diff_a = list(set(diff_a).intersection(curr_a))
+        diff_a.sort()
+        # print(diff_x)
+        if(diff_a != []):
+            sides += check_gaps_inline(diff_a) + 1
+
+        prev_line = curr_line
+
+    return sides
+
+def check_gaps_inline(line):    
+    res = list(map(lambda a, b: b - a, line,line[1:]))
+    res = list(map(lambda a: 0 if abs(a) == 1 else 1,res))
+    return sum(res)
+
 if __name__ == "__main__":
-    input_file = "test_input3.csv"
+    input_file = "input1.csv"
     
     with open(input_file, 'r') as f:
         garden = f.readlines()
@@ -186,22 +133,13 @@ if __name__ == "__main__":
         
             area,circumference = breadth_first_search(start_x,start_y,garden,garden_type)
             
-            sides_count, outside_queue = determine_side_counts(area)
-            inside_blocks = determine_inside_blocks(outside_queue,area)
-            inside_count_total = 0
-            while (len(inside_blocks) > 0):                        
-                insides_count, inside_queue = determine_side_counts(inside_blocks)
-                temp_insideBlocks = determine_inside_blocks(inside_queue,[])
-                inside_count_total += insides_count
-                for insideBlock in temp_insideBlocks:
-                    inside_blocks.remove(insideBlock)
-                # print(inside_blocks)
+            sides_count = scanning_side_counts(area)
             
             for x in area:
                 garden_coverage.remove(x)
         
-            cost = len(area) * (sides_count + inside_count_total)
-            print(f"Type {garden_type} : {len(area)} * {sides_count + inside_count_total} = {cost}")
+            cost = len(area) * (sides_count)
+            print(f"Type {garden_type} : {len(area)} * {sides_count} = {cost}")
             total_cost+=cost
     
     print(f"Total cost: {total_cost}")

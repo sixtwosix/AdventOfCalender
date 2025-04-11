@@ -1,3 +1,8 @@
+import glob
+import contextlib
+from PIL import Image
+import os
+
 X_LIMITS = (0,9999999999999999)
 Y_LIMITS = (0,9999999999999999)
 
@@ -73,8 +78,25 @@ def gps_calculation(grid: list[list[str]]) -> int:
     
     return total
 
+def print_image(grid: list[list[str]], fileName: str):
+    
+    global X_LIMITS, Y_LIMITS
+    
+    image = Image.new('RGB', (X_LIMITS[1], Y_LIMITS[1]), color=(255,255,255))
+    for y in range(Y_LIMITS[1]):
+        for x in range(X_LIMITS[1]):
+            obj = grid[y][x]
+            if(obj == "#"):
+                image.putpixel((x,y),(0,0,0))
+            elif(obj == "@"):
+                image.putpixel((x,y),(255,0,0))
+            elif(obj == "O"):
+                image.putpixel((x,y),(0,255,0))
+                
+    image.save(fileName)
+
 if __name__ == "__main__":
-    file_name = "input1.csv"
+    file_name = "test_input2.csv"
     (grid,commands) = parse_input_file(file_name)
     X_LIMITS = (0,len(grid[0]))
     Y_LIMITS = (0,len(grid))
@@ -84,11 +106,34 @@ if __name__ == "__main__":
 
     robot_x, robot_y = find_robot(grid)
 
-    for command in commands:
+    for idx, command in enumerate(commands):
         (grid,(robot_x,robot_y)) = move(grid, (robot_x,robot_y), (dx[command],dy[command]))
+        ########## create the images #########################
+        print_image(grid,f"./images/image_{idx}.bmp")
     
     for line in grid:
         print(' '.join(line))
     
     gps_value = gps_calculation(grid)
     print(gps_value)
+    
+    ########## create the gif #########################
+    fp_in = f"{os.getcwd()}/images/image_*.bmp"
+    fp_out = f"{os.getcwd()}/demo2.gif"
+    
+    with contextlib.ExitStack() as stack:
+        # lazily load images
+        imgs = (stack.enter_context(Image.open(f))
+                for f in sorted(glob.glob(fp_in),key=len))
+        
+        # extract first image from iterator
+        img = next(imgs)
+        
+        img.save(fp=fp_out, format='GIF', append_images=imgs, save_all=True, duration=150, loop=0)
+        
+    for f in sorted(glob.glob(fp_in),key=len):
+        if os.path.exists(f):
+            os.remove(f)
+    
+    
+    

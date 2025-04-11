@@ -164,3 +164,4 @@ cython_debug/
 # Remove all Data files
 *.csv
 *.txt
+images

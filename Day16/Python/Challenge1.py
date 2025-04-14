@@ -1,14 +1,21 @@
 from heapq import heapify, heappop, heappush
 import copy
+from PIL import Image
+
+X_LIMITS = (0,0)
+Y_LIMITS = (0,0)
 
 # node = (x,y,direction)
 class Graph:
     def __init__(self,maze_grid: list[list[str]], graph: dict = {}):
+        global X_LIMITS, Y_LIMITS
         self.graph = graph
         self.maze_grid = maze_grid     
         
         self.Y_MAX = len(maze_grid)
         self.X_MAX = len(maze_grid[0])
+        X_LIMITS = (0,self.X_MAX)
+        Y_LIMITS = (0,self.Y_MAX)
         
         for y in range(self.Y_MAX):
             for x in range(self.X_MAX):
@@ -73,8 +80,27 @@ def parse_input_file(fileName: str) -> list[list[str]]:
     
     return maze_grid
 
+def print_image(grid: list[list[str]], fileName: str):
+    
+    global X_LIMITS, Y_LIMITS
+    
+    image = Image.new('RGB', (X_LIMITS[1], Y_LIMITS[1]), color=(255,255,255))
+    for y in range(Y_LIMITS[1]):
+        for x in range(X_LIMITS[1]):
+            obj = grid[y][x]
+            if(obj == "#"):
+                image.putpixel((x,y),(0,0,0))
+            elif(obj == "E"):
+                image.putpixel((x,y),(255,0,0))
+            elif(obj == "S"):
+                image.putpixel((x,y),(0,255,0))
+            elif(obj == "^") or (obj == ">") or (obj == "<") or (obj == "v"):
+                image.putpixel((x,y),(0,0,750))
+                
+    image.save(fileName)
+
 if __name__ == "__main__":
-    fileName = "test_input1.csv"
+    fileName = "test_input2.csv"
     
     maze_grid = parse_input_file(fileName)
     # for line in maze_grid:
@@ -103,3 +129,5 @@ if __name__ == "__main__":
         print(' '.join(line))
     
     print(f"Total cost: {to_end[0]}")
+
+    print_image(maze_grid,f"{fileName.split(".")[0]}.bmp")

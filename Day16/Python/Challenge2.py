@@ -3,6 +3,7 @@ from PIL import Image
 import os
 import contextlib
 import glob
+import copy
 
 X_LIMITS = (0,0)
 Y_LIMITS = (0,0)
@@ -36,6 +37,10 @@ class Graph:
         while pq:
             (curr_weight, curr_x, curr_y, curr_direction, curr_history) = heappop(pq)
             
+            if(idx > 0):
+                print_image.visited = distances.copy()
+                print_image.queue = pq.copy()
+            
             if(distances[(curr_x,curr_y,curr_direction)][0] < curr_weight):
                 # current distance recorded for this position and direction is smaller so skip the rest
                 continue
@@ -62,8 +67,9 @@ class Graph:
                 temp_history = curr_history + [(next_x,next_y,curr_direction)]
                 distances[(next_x,next_y,curr_direction)] = (curr_weight + 1,temp_history)
                 heappush(pq, (curr_weight + 1, next_x, next_y, curr_direction, temp_history))
+                
             if(self.bool_gif):
-                print_image(self.maze_grid,f"./images/image_{idx}.bmp",distances,pq)
+                print_image(self.maze_grid,f"./images/image_{idx}.bmp",idx,distances,pq)
                 idx+=1
         
         self.img_idx = idx
@@ -80,7 +86,7 @@ def parse_input_file(fileName: str) -> list[list[str]]:
     
     return maze_grid
 
-def print_image(grid: list[list[str]], fileName: str, visited: dict, queue: list):
+def print_image(grid: list[list[str]], fileName: str, idx: int, visited: dict, queue: list):
     
     global X_LIMITS, Y_LIMITS
     
@@ -88,10 +94,51 @@ def print_image(grid: list[list[str]], fileName: str, visited: dict, queue: list
     visited = list(map(lambda x: (x[0],x[1]), visited))
 
     queue = list(map(lambda x: (x[1],x[2]), queue))
+    
+     # determine differences    
+    if hasattr(print_image, "queue") :
+        queue_prev = list(map(lambda x: (x[1],x[2]), print_image.queue))
+        queue_difference = list(set(queue).difference(queue_prev))
+    else:
+        queue_difference = []
+    if hasattr(print_image, "visited"):
+        visited_prev = list(print_image.visited.keys())
+        visited_prev = list(map(lambda x: (x[0],x[1]), visited_prev))
+        visited_difference = list(set(visited).difference(visited_prev))
+    else:
+        visited_difference = []
+    if hasattr(print_image, "grid"):
+        grid_prev = print_image.grid
+        grid_difference = [(x,y) for y, row in enumerate(grid) for x, val in enumerate(row) if grid_prev[y][x] != val]
+    else:
+        grid_difference = []
 
-    image = Image.new('RGB', (X_LIMITS[1], Y_LIMITS[1]), color=(255,255,255))
-    for y in range(Y_LIMITS[1]):
-        for x in range(X_LIMITS[1]):
+    if(idx <= 0):
+        image = Image.new('RGB', (X_LIMITS[1], Y_LIMITS[1]), color=(255,255,255))
+        for y in range(Y_LIMITS[1]):
+            for x in range(X_LIMITS[1]):
+                obj = grid[y][x]
+                if(obj == "#"):
+                    image.putpixel((x,y),(0,0,0))
+                elif(obj == "E"):
+                    image.putpixel((x,y),(255,0,0))
+                elif(obj == "S"):
+                    image.putpixel((x,y),(0,255,0))
+                elif(obj == "^") or (obj == ">") or (obj == "<") or (obj == "v"):
+                    image.putpixel((x,y),(255,128,0))
+                # elif((x,y) in queue):
+                #     image.putpixel((x,y),(255,255,70))
+                elif((x,y) in visited):
+                    image.putpixel((x,y),(102,102,255)) 
+    else:
+        
+        # open previous image            
+        prev_fileName = f"{fileName.split(f'_{idx}.')[0]}_{idx-1}.{fileName.split(f'_{idx}.')[1]}"
+        image = Image.open(prev_fileName)        
+        
+        # apply changes to previous image and save as new image       
+        # for x,y in queue_difference + visited_difference + grid_difference:
+        for x,y in visited_difference + grid_difference:
             obj = grid[y][x]
             if(obj == "#"):
                 image.putpixel((x,y),(0,0,0))
@@ -100,11 +147,12 @@ def print_image(grid: list[list[str]], fileName: str, visited: dict, queue: list
             elif(obj == "S"):
                 image.putpixel((x,y),(0,255,0))
             elif(obj == "^") or (obj == ">") or (obj == "<") or (obj == "v"):
-                image.putpixel((x,y),(255,128,0))
-            elif((x,y) in queue):
-                image.putpixel((x,y),(255,255,70)) # light yellow
-            elif((x,y) in visited):
-                image.putpixel((x,y),(102,102,255)) # very light green            
+                image.putpixel((x,y),(255,128,0))            
+            # elif((x,y) in queue_difference):
+            #     image.putpixel((x,y),(255,255,70))
+            elif((x,y) in visited_difference):
+                image.putpixel((x,y),(102,102,255)) 
+        
                 
     image.save(fileName)
 
@@ -125,6 +173,8 @@ if __name__ == "__main__":
 
     dist_original_path = dist_original[(len(maze_grid)-2,1,direction)][1]
 
+
+    print_image.grid = copy.deepcopy(maze_grid)
     for item in dist_original_path:
         x = item[0]
         y = item[1]
@@ -140,12 +190,12 @@ if __name__ == "__main__":
             elif(dirr == 3):
                 maze_grid[y][x] = "<"
     
-    for i in range(1,50):
-        print_image(maze_grid,f"./images/image_{maze_graph.img_idx+i}.bmp",dist_original,[])
+    for i in range(50):
+        print_image(maze_grid,f"./images/image_{maze_graph.img_idx+i}.bmp",maze_graph.img_idx+i,dist_original,[])
 
     ########## create the gif #########################
     fp_in = f"{os.getcwd()}/images/image_*.bmp"
-    fp_out = f"{os.getcwd()}/{fileName.split(".")[0]}.gif"
+    fp_out = f"{os.getcwd()}/{fileName.split('.')[0]}.gif"
     
     with contextlib.ExitStack() as stack:
         # lazily load images
@@ -155,7 +205,7 @@ if __name__ == "__main__":
         # extract first image from iterator
         img = next(imgs)
         
-        img.save(fp=fp_out, format='GIF', append_images=imgs, save_all=True, duration=25, loop=1)
+        img.save(fp=fp_out, format='GIF', append_images=imgs, save_all=True, duration=1)
         
     for f in sorted(glob.glob(fp_in),key=len):
         if os.path.exists(f):

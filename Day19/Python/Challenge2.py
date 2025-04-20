@@ -8,23 +8,23 @@ def parse_file(fileName : str) -> tuple[list[str],list[str]]:
     
     return (pattern_list,pattern_match)
 
-def can_make_pattern(avail_pat: list[str], match_pat: str, cache: dict) -> bool:
+def total_ways_make_pattern(avail_pat: list[str], match_pat: str, cache: dict) -> tuple[int,dict]:
     
     if(match_pat in cache):
-        return cache[match_pat]
+        return cache[match_pat], cache
     
     if(match_pat == ""):
-        return True
+        return 1, cache, 
+    
+    total_ways = 0
     for idx, pat in enumerate(avail_pat):        
         if(match_pat.startswith(pat)):
             remain_pat = match_pat[len(pat):]
-            if (can_make_pattern(avail_pat,remain_pat,cache)):
-                cache[match_pat] = True
-                return True
+            res, cache = total_ways_make_pattern(avail_pat,remain_pat,cache)
+            total_ways += res
     
-    cache[match_pat] = False
-    return False
-    
+    cache[match_pat] = total_ways
+    return total_ways, cache
 
 if __name__ == "__main__":
     fileName = "input1.csv"
@@ -38,11 +38,12 @@ if __name__ == "__main__":
     else:
         # normal case
         print
-        
-    cache = {}
-    match_count = [0 for x in range(len(match_pat))]
-    for idx, pat in enumerate(match_pat):
-        if(can_make_pattern(avail_pat,pat,cache)):
-            match_count[idx] = 1
     
-    print(f"Total of {sum(match_count)} towels can be made")
+    cache = {}
+    total = 0
+    for idx, pat in enumerate(match_pat):        
+        res, cache = total_ways_make_pattern(avail_pat, pat, cache)            
+        total += res
+    
+    print(f"Number of different ways to arrange designs {total}")
+    

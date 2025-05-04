@@ -17,22 +17,17 @@ def dijkstra (grid: list[list[str]], start: tuple[int], end: tuple[int], start_w
     x,y = start
     pq = []    
     
-    heapq.heappush(pq,(start_weight,x,y,0))
-    distance[(start[0],start[1],0)] = start_weight
-    
-    # if not (cheat_count):
-    #     sys.stdout.write("\r checking cheat at (%3d,%3d)" % (start[0], start[1]))
-    #     sys.stdout.flush()
-    #     # print(len(pq),end='',flush=True)
+    heapq.heappush(pq,(start_weight,x,y))
+    distance[(start[0],start[1])] = (start_weight,start)
     
     while pq:
         
-        (weight, x ,y, cheat_count) = heapq.heappop(pq)
+        (weight, x ,y) = heapq.heappop(pq)
         
-        # if((x,y) == end):
-        #     return distance
+        if((x,y) == end):
+            return distance
         
-        if(distance[(x,y,cheat_count)] < weight):
+        if(distance[(x,y)][0] < weight):
             continue
         
         for i in range(4):
@@ -41,18 +36,9 @@ def dijkstra (grid: list[list[str]], start: tuple[int], end: tuple[int], start_w
             new_x = x + dx
             new_y = y + dy
             if(0 <= new_y < len(grid)) and (0 <= new_x < len(grid[0])) and (grid[new_y][new_x] != "#"):
-                if((new_x,new_y,cheat_count) not in distance) or (distance[(new_x,new_y,cheat_count)] > weight + 1):
-                    distance[(new_x,new_y,cheat_count)] = weight + 1
-                    heapq.heappush(pq,(weight+1,new_x,new_y,cheat_count))
-
-            # cheat section
-            if(cheat_count+1 <= max_cheat):
-                cheat_x = x + dx
-                cheat_y = y + dy
-                if(0 <= new_y < len(grid)) and (0 <= new_x < len(grid[0])):                    
-                    if((cheat_x,cheat_y,cheat_count+1) not in distance) or (distance[(cheat_x,cheat_y,cheat_count+1)] < weight + 1):
-                        distance[(cheat_x,cheat_y,cheat_count+1)] = weight + 1
-                        heapq.heappush(pq,(weight+1,cheat_x,cheat_y,cheat_count+1))
+                if((new_x,new_y) not in distance) or (distance[(new_x,new_y)][0] > weight + 1):
+                    distance[(new_x,new_y)] = (weight + 1,(x,y))
+                    heapq.heappush(pq,(weight+1,new_x,new_y))
     
     return distance    
 
@@ -78,17 +64,25 @@ def parse_file(fileName : str) -> list[list[str]]:
         grid = list(map(list,grid))
     return grid
 
+def manhattan_distance(p1: tuple[int], p2: tuple[int]):
+    x = abs(p1[0]-p2[0])
+    y = abs(p1[1]-p2[1])
+    return x + y
+
+
 if __name__ == "__main__":
-    fileName = "test_input1.csv"       
+    fileName = "input1.csv"       
     
     grid = parse_file(fileName)
     
     if(fileName.startswith("test")):
         # test case
         faster_than = 50
+        cheat_count_max = 20
     else:
         # prod case
         faster_than = 100
+        cheat_count_max = 20
         
     frmt = "{:>02} "*len(grid[0])    
     print("  " + frmt.format(*[str(i) for i in range(len(grid[0]))]))
@@ -96,33 +90,44 @@ if __name__ == "__main__":
     for idx,line in enumerate(grid):        
         print("%(number)02d" % {"number":idx} + frmt.format(*line) )
     
-    cheat_distance = {}    
     start,end = start_end_find(grid)
     print(f"Start: {start}\tEnd: {end}")
     distances = dijkstra(grid,start,end,0)
-    no_cheat_time = distances[(end[0],end[1],2)]
-    print()
-    print(distances)
-    print(f"No cheat time: {no_cheat_time}")
-    # cheat_faster = {}
-    # for x,y,weight_start,cheant_count in cheat_distances.keys():
-    #     cheat_spot = (x,y,weight_start,cheant_count)
-    #     time_diff = no_cheat_time - cheat_distances[cheat_spot]
-    #     if(time_diff >= faster_than):
-    #         if(time_diff in cheat_faster):
-    #             cheat_faster[time_diff] += 1
-    #         else:
-    #             cheat_faster[time_diff] = 1
+    nocheat_time = distances[end][0]
+    path_nocheat = []
+    spot = end
+    while(spot != distances[spot][1]):
+        path_nocheat.append(spot)
+        spot = distances[spot][1]
+    path_nocheat.append(spot)
+    path_nocheat.reverse()
+    # print(path_nocheat)
     
-    # keys_list = list(cheat_faster.keys())
-    # keys_list.sort()
+    # they state only 1 path is possible for completion
+    # thus cheat start and end point must be on track
+    # determine the 1 path, then ensure manhattan distance between cheat start and end point < cheat count
+    # determine time won from cheat count with original dijkstra
+    cheat_times = {}
+    for idx_start, cheat_start in enumerate(path_nocheat):
+        for idx_end, cheat_end in enumerate(path_nocheat):
+            diff = manhattan_distance(cheat_start,cheat_end)
+            if(diff < abs(idx_end-idx_start)) and (diff <= cheat_count_max):
+                cheat_time = diff + distances[cheat_start][0] + (nocheat_time - distances[cheat_end][0])
+                cheat_time_diff = nocheat_time - cheat_time
+                if(cheat_time_diff >= faster_than):
+                    if(cheat_time_diff not in cheat_times):
+                        cheat_times[cheat_time_diff] = 1
+                    else:
+                        cheat_times[cheat_time_diff] += 1
     
-    # total_cheats_count = 0
-    # for key in keys_list:
-    #     # if(key > faster_than):
-    #     total_cheats_count += cheat_faster[key]
-    #     print(f"There are {cheat_faster[key]} cheats that save {key} picoseconds ")
-    # print("===================================================================================")
-    # print(f"There are {total_cheats_count} cheats that save at least {faster_than} picoseconds")
+    keys_list = list(cheat_times.keys())
+    keys_list.sort()
     
-        
+    total_cheats_count = 0
+    for key in keys_list:
+        # if(key > faster_than):
+        total_cheats_count += cheat_times[key]
+        print(f"There are {cheat_times[key]} cheats that save {key} picoseconds ")
+    print("===================================================================================")
+    print(f"There are {total_cheats_count} cheats that save at least {faster_than} picoseconds")
+    

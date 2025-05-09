@@ -62,12 +62,13 @@ def determine_errors(circuit: dict, memo_circuit: dict, possible_errors):
     circuit = {v[1]: k for k, v in circuit.items()}
     memo_circuit = {v: k for k, v in memo_circuit.items()}
     cache = {}
+    broken_wires = []
     
     def reverse_engineer(statement: str, statement_memo: str):
         if((statement,statement_memo) in cache):
             return cache[(statement,statement_memo)]
         if(statement == statement_memo):
-            n = True
+            n = True            
             print(f"{statement} -- {statement_memo}")
         else:
             res = re.findall(regex_string,statement)
@@ -75,6 +76,7 @@ def determine_errors(circuit: dict, memo_circuit: dict, possible_errors):
             
             if(len(res) == 0 and len(res_memo) == 0):
                 n = False
+                broken_wires.append((statement,statement_memo))
                 print(f"{statement} -- {statement_memo}")
             else:
                 for x in res:
@@ -101,30 +103,56 @@ def determine_errors(circuit: dict, memo_circuit: dict, possible_errors):
                         n = False
                         cache[(statement,statement_memo)] = n
                         print(f"{statement} -- {statement_memo}")
+                        broken_wires.append((statement,statement_memo))
                         return n
                         
                     y = circuit[x]
                     x = f"[{x1}]"
                     statement_memo = statement_memo.replace(x,y)
             
-                # print(f"{statement} -- {statement_memo}")
+                print(f"{statement} -- {statement_memo}")
             
                 n = reverse_engineer(statement,statement_memo)
         cache[(statement,statement_memo)] = n
         return n
     
-    return reverse_engineer(possible_errors[0],possible_errors[1])
-    
-    
+    return reverse_engineer(possible_errors[0],possible_errors[1]),broken_wires
 
-if __name__ == "__main__":
-    fileName = "input1.csv"
+def fix_broken_wires(circuit: str, circuit_memo: str, circuit_dict: dict, circuit_dict_original: dict):
     
-    circuit_dict = parsefile(fileName)
-    circuit_dict_original = circuit_dict.copy()
+    circuit_dict_origin = circuit_dict_original.copy()
+
+
+    if(len(circuit) == 3 and len(circuit_memo) == 3):
+        temp = circuit_dict[circuit]
+        circuit_dict[circuit] = circuit_dict[circuit_memo]
+        circuit_dict[circuit_memo] = temp
+        temp = circuit_dict_origin[circuit]
+        circuit_dict_origin[circuit] = circuit_dict_origin[circuit_memo]
+        circuit_dict_origin[circuit_memo] = temp
     
-    circuit_dict = solve_circuit(circuit_dict)
+    print(f"{circuit} <--> {circuit_memo}")    
+
+    return circuit_dict, circuit_dict_origin
+
+def check_circuit_matches(circuit_dict: dict, memo_cache: dict, circuit_dict_original: dict):
     
+    for i,(key,val) in enumerate(sorted(circuit_dict.items(),key=lambda x : x[0])):  
+        if(key[0] == "z" and key[1:].isdigit()):  
+            print(key[1:])
+            is_equal, broken_wires = determine_errors(circuit_dict_original,memo_cache,(val[1],memo_cache[key]))
+            print()
+            if not (is_equal):        
+                print("We have a problem")
+                print("=======================================================================================================================================================")                
+                broken_wires = broken_wires[0]
+                # print(broken_wires)                
+                return broken_wires
+    
+    print("No error found in circuit")
+    return None
+
+def create_circuit_memo(circuit_dict : dict):
     # determine the memo
     memo_cache = {}    
     for i,(key,val) in enumerate(sorted(circuit_dict.items(),key=lambda x : x[0])):
@@ -138,13 +166,31 @@ if __name__ == "__main__":
             else:
                 memo_cache[f"z{count:0>2}"] = f"[{memo_cache[f"c{count-1:0>2}"]} XOR [x{count:0>2} XOR y{count:0>2}]]"
                 memo_cache[f"c{count:0>2}"] = f"[[x{count:0>2} AND y{count:0>2}] OR [{memo_cache[f"c{count-1:0>2}"]} AND [x{count:0>2} XOR y{count:0>2}]]]"
+    
+    return memo_cache
 
-    for i,(key,val) in enumerate(sorted(circuit_dict.items(),key=lambda x : x[0])):  
-        if(key[0] == "z" and key[1:].isdigit()):  
-            is_equal = determine_errors(circuit_dict_original,memo_cache,(val[1],memo_cache[key]))
-            if not (is_equal):        
-                print("We have a problem")
-                print("=======================================================================================================================================================")
-                break
+if __name__ == "__main__":
+    fileName = "input1.csv"
+    
+    circuit_dict = parsefile(fileName)
+    circuit_dict_original = circuit_dict.copy()
+    
+    circuit_dict = solve_circuit(circuit_dict)
+
+    print(circuit_dict)
+    
+    memo_cache = create_circuit_memo(circuit_dict)
+
+    print(memo_cache)
+    res = check_circuit_matches(circuit_dict,memo_cache,circuit_dict_original)
+    # if(res != None):
+    #     # print(res)    
+    #     new_circuit, new_circuit_origin = fix_broken_wires(res[0],res[1],circuit_dict,circuit_dict_original)
+    #     memo_cache = create_circuit_memo(new_circuit)
+    #     res = check_circuit_matches(circuit_dict,memo_cache,new_circuit)
+    #     if(res != None):
+    #         # print(res)    
+    #         new_circuit, new_circuit_origin = fix_broken_wires(res[0],res[1],new_circuit,new_circuit_origin)
+    # print(new_circuit)
 
     
